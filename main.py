@@ -11,7 +11,8 @@ import argparse
 from pathlib import Path
 
 from simulation import SimConfig, run_simulation, save_results, load_results
-from plot_results import build_overview_figure
+from plots.overview import build_overview_figure
+from analysis.intermittency import build_analysis_figure
 import matplotlib.pyplot as plt
 
 
@@ -28,6 +29,8 @@ def parse_args() -> tuple[SimConfig, argparse.Namespace]:
                         help="Directory to save PNG figures (omit = show interactively)")
     parser.add_argument("--skip_sim", action="store_true",
                         help="Skip simulation; load existing results and just plot")
+    parser.add_argument("--analysis", action="store_true",
+                        help="Also show the intermittency analysis figure")
     args = parser.parse_args()
 
     cfg.dt         = args.dt
@@ -62,9 +65,24 @@ def main():
         save_dir.mkdir(parents=True, exist_ok=True)
         out_fig  = save_dir / "overview.png"
         fig.savefig(out_fig, dpi=150)
-        print(f"Figure saved → {out_fig}")
+        print(f"Figure saved -> {out_fig}")
     else:
         plt.show()
+
+    if args.analysis:
+        fig_a = build_analysis_figure(
+            k_vectors=results["k_vectors"],
+            amplitudes=results["amplitudes"],
+            phase_offsets=results["phase_offsets"],
+            label="clustered" if cfg.phase_coherence > 0 else "baseline",
+        )
+        if args.save_figs:
+            save_dir = Path(args.save_figs)
+            out_a    = save_dir / "intermittency.png"
+            fig_a.savefig(out_a, dpi=150)
+            print(f"Figure saved -> {out_a}")
+        else:
+            plt.show()
 
 
 if __name__ == "__main__":
